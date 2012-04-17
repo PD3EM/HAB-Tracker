@@ -1,6 +1,5 @@
 #include "Arduino.h"
 #include "SoftwareSerial.h"
-// #include "TinyGPS.h"
 #include <Wire.h>
 #define ADDRESS 0x76
 #define PUBX "$PUBX,00*33"
@@ -15,7 +14,6 @@ SoftwareSerial debugSerial(debugRX, debugTX);
 void setup() {
   Wire.begin();
   delay(100);
-//  initial(ADDRESS);
   debugSerial.begin(dbgBaud);
   Serial.begin(gpsBaud); //set up the GPS serial port
 
@@ -33,5 +31,3 @@ void loop() {
     }
   }
 }
-
-
