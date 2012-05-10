@@ -64,7 +64,7 @@ void loop() {
   getMS5607();
   error = SDerror + GPSerror;
   
-  n=sprintf (superbuffer, "$$$PD3EM,%d,%02d:%02d:%02d,%ld,%ld,%ld,%d,%d,%d,%d,%d,%d", count, hour, minute, second, lat, lon, alt, sats, temp1, press1, temp2, error,1);
+  n=sprintf (superbuffer, "$$PD3EM,%d,%02d:%02d:%02d,%ld,%ld,%ld,%d,%d,%d,%d,%d,%d", count, hour, minute, second, lat, lon, alt, sats, temp1, press1, temp2, error,1);
   sdcard_log(superbuffer);   // Write packet to SD card
   txString(superbuffer); //finally, call the RTTY routine to checksum and then transmit the sentence.
   
