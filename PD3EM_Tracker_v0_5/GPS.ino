@@ -91,7 +91,7 @@ void gps_get_data()
 */
 void gps_check_lock()
 {
-  GPSerror = 0;
+  GPSerrorL = 0;
     Serial.flush();
     // Construct the request to the GPS
     uint8_t request[8] = {0xB5, 0x62, 0x01, 0x06, 0x00, 0x00,
@@ -102,18 +102,18 @@ void gps_check_lock()
     gps_get_data();
     // Verify the sync and header bits
     if( buf[0] != 0xB5 || buf[1] != 0x62 ) {
-      GPSerror = 11;
+      GPSerrorL = 100;
     }
     if( buf[2] != 0x01 || buf[3] != 0x06 ) {
-      GPSerror = 12;
+      GPSerrorL = 200;
     }
 
     // Check 60 bytes minus SYNC and CHECKSUM (4 bytes)
     if( !_gps_verify_checksum(&buf[2], 56) ) {
-      GPSerror = 13;
+      GPSerrorL = 300;
     }
     
-    if(GPSerror == 0){
+    if(GPSerrorL == 0){
     // Return the value if GPSfixOK is set in 'flags'
     if( buf[17] & 0x01 )
         lock = buf[16];
@@ -133,7 +133,7 @@ void gps_check_lock()
 */
 void gps_get_position()
 {
-    GPSerror = 0;
+    GPSerrorP = 0;
     Serial.flush();
     // Request a NAV-POSLLH message from the GPS
     uint8_t request[8] = {0xB5, 0x62, 0x01, 0x02, 0x00, 0x00, 0x03,
@@ -145,24 +145,29 @@ void gps_get_position()
 
     // Verify the sync and header bits
     if( buf[0] != 0xB5 || buf[1] != 0x62 )
-        GPSerror = 21;
+        GPSerrorP = 10;
     if( buf[2] != 0x01 || buf[3] != 0x02 )
-        GPSerror = 22;
+        GPSerrorP = 20;
         
     if( !_gps_verify_checksum(&buf[2], 32) ) {
-      GPSerror = 23;
+      GPSerrorP = 30;
     }
     
-    if(GPSerror == 0) {
+    if(GPSerrorP == 0) {
       // 4 bytes of longitude (1e-7)
       lon = (int32_t)buf[10] | (int32_t)buf[11] << 8 |
           (int32_t)buf[12] << 16 | (int32_t)buf[13] << 24;
       //lon /= 1000;
+      // Convert longtitude e.g. from 48252779 to 4.8252779
+      decimal_2(lon, longtitude); 
       
       // 4 bytes of latitude (1e-7)
       lat = (int32_t)buf[14] | (int32_t)buf[15] << 8 |
           (int32_t)buf[16] << 16 | (int32_t)buf[17] << 24;
       // lat /= 10000000.0000000;
+      
+      // Convert latitude e.g. from 518926628 to 51.8926628
+      decimal_2(lat, latitude); 
       
       // 4 bytes of altitude above MSL (mm)
       alt = (int32_t)buf[22] | (int32_t)buf[23] << 8 |
@@ -177,7 +182,7 @@ void gps_get_position()
 */
 void gps_get_time()
 {
-    GPSerror = 0;
+    GPSerrorT = 0;
     Serial.flush();
     // Send a NAV-TIMEUTC message to the receiver
     uint8_t request[8] = {0xB5, 0x62, 0x01, 0x21, 0x00, 0x00,
@@ -189,18 +194,18 @@ void gps_get_time()
 
     // Verify the sync and header bits
     if( buf[0] != 0xB5 || buf[1] != 0x62 )
-        GPSerror = 31;
+        GPSerrorT = 1;
     if( buf[2] != 0x01 || buf[3] != 0x21 )
-        GPSerror = 32;
+        GPSerrorT = 2;
 
     if( !_gps_verify_checksum(&buf[2], 24) ) {
-      GPSerror = 33;
+      GPSerrorT = 3;
     }
     
-    if(GPSerror == 0) {
+    if(GPSerrorT == 0) {
       if(hour > 23 || minute > 59 || second > 59)
       {
-        GPSerror = 34;
+        GPSerrorT = 4;
       }
       else {
         hour = buf[22];
@@ -216,3 +221,18 @@ void sendUBX(uint8_t *MSG, uint8_t len) {
     Serial.write(MSG[i]);
   }
 }
+
+// Convert position data
+void decimal_2(int32_t in, char uit[11])
+{
+  int geheel;
+  long rest;
+  String resultaat;
+ 
+  geheel = in / 10000000;
+  rest = in % (geheel * 10000000);
+ 
+  resultaat = String(geheel) + "." + String(rest);
+  resultaat.toCharArray(uit,11);
+}
+
